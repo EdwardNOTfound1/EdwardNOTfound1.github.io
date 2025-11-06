@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dice Roller</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Spin animation for rolling */
+        @keyframes spin-fast {
+            from {
+                transform: rotate(0deg) scale(0.5);
+                opacity: 0.5;
+            }
+            to {
+                transform: rotate(1080deg) scale(1);
+                opacity: 1;
+            }
+        }
+        .animate-spin-fast {
+            animation: spin-fast 1s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Pop animation for footer buttons */
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        .animate-pop {
+            animation: pop 0.2s ease-out;
+        }
+
+        /* NEW: Animation for removing a die */
+        @keyframes zoom-out {
+            from {
+                transform: scale(1);
+                opacity: 1;
+            }
+            to {
+                transform: scale(0);
+                opacity: 0;
+            }
+        }
+        .animate-zoom-out {
+            animation: zoom-out 0.3s ease-out;
+        }
+
+        /* Custom styles */
+        .die-button {
+            border-radius: 10px;
+            transition: all 0.2s ease-out;
+        }
+        .die-button:not(.selected):hover {
+            opacity: 0.8;
+        }
+
+        .fill-green-500 { fill: #22c55e; }
+        .fill-cyan-500 { fill: #06b6d4; }
+        .fill-purple-500 { fill: #a855f7; }
+        .fill-pink-500 { fill: #ec4899; }
+        .fill-red-500 { fill: #ef4444; }
+        .fill-orange-500 { fill: #f97316; }
+
+        input[type='number']::-webkit-inner-spin-button,
+        input[type='number']::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type='number'] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col h-screen overflow-hidden">
+
+    <!-- Wrapper for top content area -->
+    <div class="flex-grow flex flex-col bg-gray-800 rounded-b-2xl shadow-lg overflow-hidden">
+
+        <!-- Header bar with Clear All and Total -->
+        <header class="w-full p-4 flex justify-between items-center border-b border-gray-700 flex-shrink-0">
+            <button id="clear-all-button" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all">
+                Clear All
+            </button>
+            <div class="text-2xl">
+                <span class="text-gray-400">Total</span>
+                <span id="total-number" class="font-bold text-white ml-2">0</span>
+            </div>
+        </header>
+        
+        <!-- Main dice display area -->
+        <main class="flex-grow relative flex flex-wrap gap-4 p-4 items-center justify-center overflow-y-auto">
+            <!-- Dice container -->
+            <div id="dice-display" class="flex flex-wrap gap-4 items-center justify-center">
+                <!-- Dice instances are added here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer with controls -->
+    <footer class="w-full p-4 flex flex-col items-center gap-4 flex-shrink-0">
+        <!-- Upper row: Dice selectors (with polished alignment) -->
+        <div class="relative w-full max-w-md px-10">
+            <div id="dice-selector-container" class="flex gap-3 justify-center items-center">
+                
+                <button data-die="4" class="die-button relative w-12 h-12 flex items-center justify-center text-white font-bold">
+                    <svg viewBox="0 0 32 32" class="absolute w-full h-full fill-green-500"><polygon points="16 4, 30 30, 2 30"></polygon></svg>
+                    <span class="relative">4</span>
+                </button>
+                
+                <button data-die="6" class="die-button relative w-12 h-12 flex items-center justify-center text-white font-bold">
+                    <svg viewBox="0 0 32 32" class="absolute w-full h-full fill-cyan-500"><polygon points="3 3, 29 3, 29 29, 3 29"></polygon></svg>
+                    <span class="relative">6</span>
+                </button>
+                
+                <button data-die="8" class="die-button relative w-12 h-12 flex items-center justify-center text-white font-bold">
+                    <svg viewBox="0 0 32 32" class="absolute w-full h-full fill-purple-500"><polygon points="16 2, 30 16, 16 30, 2 16"></polygon></svg>
+                    <span class="relative">8</span>
+                </button>
+                
+                <button data-die="10" class="die-button relative w-12 h-12 flex items-center justify-center text-white font-bold">
+                    <svg viewBox="0 0 32 32" class="absolute w-full h-full fill-pink-500"><polygon points="16 3, 30 13, 24 31, 8 31, 2 13"></polygon></svg>
+                    <span class="relative">10</span>
+                </button>
+                
+                <button data-die="12" class="die-button relative w-12 h-12 flex items-center justify-center text-white font-bold">
+                    <svg viewBox="0 0 32 32" class="absolute w-full h-full fill-red-500"><polygon points="16 3, 30 13, 24 31, 8 31, 2 13"></polygon></svg>
+                    <span class="relative">12</span>
+                </button>
+                
+                <button data-die="20" class="die-button relative w-12 h-12 flex items-center justify-center text-white font-bold">
+                    <svg viewBox="0 0 32 32" class="absolute w-full h-full fill-orange-500"><polygon points="16 2, 30 8, 30 24, 16 30, 2 24, 2 8"></polygon></svg>
+                    <span class="relative">20</span>
+                </button>
+
+            </div>
+        </div>
+        
+        <!-- Lower row: Roll Button -->
+        <div class="relative">
+            <button id="roll-button" class="bg-blue-600 text-white px-10 py-3 rounded-full font-semibold text-lg hover:bg-blue-700 transition-all shadow-md">
+                Roll
+            </button>
+            <span id="rig-indicator" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-700 text-lg font-bold hidden select-none"></span>
+        </div>
+    </footer>
+
+    <script>
+        const clearAllButton = document.getElementById('clear-all-button');
+        const diceDisplay = document.getElementById('dice-display');
+        const totalNumber = document.getElementById('total-number');
+        const rollButton = document.getElementById('roll-button');
+        const selectorContainer = document.getElementById('dice-selector-container');
+        const rigIndicator = document.getElementById('rig-indicator');
+        
+        const dieFills = {
+            4: 'fill-green-500',
+            6: 'fill-cyan-500',
+            8: 'fill-purple-500',
+            10: 'fill-pink-500',
+            12: 'fill-red-500',
+            20: 'fill-orange-500'
+        };
+
+        let dicePool = []; 
+        // 'isRolling' is now *only* for the 'Roll All' button
+        let isRolling = false; 
+        let rigMode = null; 
+
+        function rollDie(max) {
+            return Math.floor(Math.random() * max) + 1;
+        }
+
+        function rollRiggedDie(mode) {
+            switch(mode) {
+                case '1': return 1;
+                case '2': return Math.floor(Math.random() * 5) + 1;
+                case '3': return Math.floor(Math.random() * 10) + 1;
+                case '8': return Math.floor(Math.random() * 11) + 10;
+                case '9': return Math.floor(Math.random() * 6) + 15;
+                case '0': return 20;
+                default: return 1;
+            }
+        }
+
+        function updateTally() {
+            const total = dicePool.reduce((acc, die) => acc + die.value, 0);
+            totalNumber.textContent = total;
+        }
+
+        // NEW function to create, animate, and add one die
+        function createAndAnimateDie(newDie) {
+            const fillClass = dieFills[newDie.type];
+            const iconSVG = document.querySelector(`[data-die="${newDie.type}"] svg`).innerHTML;
+            
+            // Create the element
+            const dieEl = document.createElement('div');
+            dieEl.className = 'die-instance relative w-32 h-32 flex items-center justify-center cursor-pointer';
+            dieEl.dataset.id = newDie.id;
+            
+            // Set initial unrolled state
+            dieEl.innerHTML = `
+                <div class="absolute inset-0 flex items-center justify-center transition-all duration-300">
+                    <svg viewBox="0 0 32 32" class="w-32 h-32 ${fillClass} scale-100">${iconSVG}</svg>
+                </div>
+                <span class="absolute text-4xl font-black text-white transition-all duration-300 ease-out opacity-0 scale-0"></span>
+            `;
+            
+            // Add to the DOM
+            diceDisplay.appendChild(dieEl);
+
+            const iconEl = dieEl.querySelector('svg');
+            const numberEl = dieEl.querySelector('span');
+
+            // Get its final value
+            const finalValue = rigMode ? rollRiggedDie(rigMode) : rollDie(newDie.type);
+            newDie.value = finalValue; // Update the model
+
+            // Don't show '...' for just one die, wait for tally
+            // totalNumber.textContent = '...'; 
+
+            // 1. Add spin animation to the icon
+            iconEl.classList.add('animate-spin-fast');
+
+            // 2. Start number flicker
+            const flickerInterval = setInterval(() => {
+                const randomVal = Math.floor(Math.random() * newDie.type) + 1;
+                numberEl.textContent = randomVal;
+                // Make number visible during flicker
+                numberEl.classList.remove('opacity-0', 'scale-0');
+                numberEl.classList.add('scale-100');
+            }, 100);
+
+            // 3. Wait for animation to finish
+            setTimeout(() => {
+                // Stop animation and flicker
+                clearInterval(flickerInterval);
+                iconEl.classList.remove('animate-spin-fast');
+                
+                // Settle on final state
+                iconEl.classList.add('scale-90', 'transition-transform', 'duration-300');
+                
+                numberEl.textContent = newDie.value;
+                numberEl.classList.remove('opacity-0', 'scale-0');
+                numberEl.classList.add('scale-100');
+                
+                // Update total
+                updateTally();
+            }, 1000); // 1s animation
+        }
+
+
+        // MODIFIED: This function now adds AND rolls the new die
+        function addDieToPool(e) {
+            const button = e.target.closest('.die-button[data-die]');
+            // Only check for 'isRolling' (from Roll All)
+            if (!button || isRolling) return; 
+
+            const dieType = parseInt(button.dataset.die, 10);
+            
+            // Animate button
+            button.classList.add('animate-pop');
+            button.addEventListener('animationend', () => button.classList.remove('animate-pop'), { once: true });
+
+            // Create new die
+            const newDie = { type: dieType, value: 0, id: crypto.randomUUID() };
+            dicePool.push(newDie);
+            
+            // Call the new function to create and animate just this die
+            createAndAnimateDie(newDie);
+        }
+
+        // MODIFIED: Animates removal
+        function removeDieFromPool(e) {
+            if (isRolling) return; // Still respect the 'Roll All' lock
+            
+            const dieEl = e.target.closest('.die-instance');
+            if (dieEl) {
+                const dieId = dieEl.dataset.id;
+                
+                // Animate out
+                dieEl.classList.add('animate-zoom-out');
+                dieEl.addEventListener('animationend', () => {
+                    dieEl.remove();
+                    // Update model *after* animation/removal
+                    dicePool = dicePool.filter(die => die.id !== dieId);
+                    updateTally();
+                }, { once: true });
+            }
+        }
+
+        // This function uses the 'isRolling' lock
+        function rollAllDice() {
+            if (isRolling || dicePool.length === 0) return;
+            isRolling = true; // Set the lock
+            
+            let total = 0;
+            totalNumber.textContent = '...';
+
+            // Roll logic and update state
+            dicePool.forEach(die => {
+                if (rigMode) {
+                    die.value = rollRiggedDie(rigMode);
+                } else {
+                    die.value = rollDie(die.type);
+                }
+                total += die.value;
+            });
+
+            // Animate each die in the DOM
+            const dieElements = document.querySelectorAll('.die-instance');
+            dieElements.forEach((dieEl, index) => {
+                const die = dicePool[index]; 
+                const iconEl = dieEl.querySelector('svg');
+                const numberEl = dieEl.querySelector('span');
+                
+                // Prepare for animation
+                iconEl.classList.remove('scale-90');
+                numberEl.classList.add('opacity-0', 'scale-0');
+                numberEl.classList.remove('scale-100');
+
+                // Add animation class to icon
+                iconEl.classList.add('animate-spin-fast');
+
+                // Start number flicker
+                const flickerInterval = setInterval(() => {
+                    const randomVal = Math.floor(Math.random() * die.type) + 1;
+                    numberEl.textContent = randomVal;
+                    numberEl.classList.remove('opacity-0', 'scale-0');
+                    numberEl.classList.add('scale-100');
+                }, 100);
+
+                // Wait for animation to finish
+                setTimeout(() => {
+                    clearInterval(flickerInterval);
+                    iconEl.classList.remove('animate-spin-fast');
+                    iconEl.classList.add('scale-90', 'transition-transform', 'duration-300');
+                    
+                    numberEl.textContent = die.value;
+                    numberEl.classList.remove('opacity-0', 'scale-0');
+                    numberEl.classList.add('scale-100');
+                    
+                    if (index === dieElements.length - 1) {
+                        totalNumber.textContent = total;
+                        isRolling = false; // Release the lock
+                    }
+                }, 1000); // 1s animation
+            });
+        }
+
+        // MODIFIED: Animates removal for all dice
+        function clearAllDice() {
+            if (isRolling || dicePool.length === 0) return;
+            
+            dicePool = []; // Clear model
+            updateTally(); // Update total immediately
+            
+            const dieElements = document.querySelectorAll('.die-instance');
+            dieElements.forEach(dieEl => {
+                dieEl.classList.add('animate-zoom-out');
+                dieEl.addEventListener('animationend', () => {
+                    dieEl.remove();
+                }, { once: true });
+            });
+        }
+
+        // Event Listeners
+        rollButton.addEventListener('click', rollAllDice);
+        selectorContainer.addEventListener('click', addDieToPool);
+        diceDisplay.addEventListener('click', removeDieFromPool);
+        clearAllButton.addEventListener('click', clearAllDice);
+
+        // Keyboard listener for rigged mode
+        document.addEventListener('keydown', (e) => {
+            const key = e.key;
+            if (['1', '2', '3', '8', '9', '0'].includes(key)) {
+                rigMode = key;
+                rigIndicator.textContent = key;
+                rigIndicator.classList.remove('hidden');
+            } else if (key.toLowerCase() === 'x') {
+                rigMode = null;
+                rigIndicator.classList.add('hidden');
+            }
+        });
+
+        // Initial state
+        totalNumber.textContent = 0;
+    </script>
+</body>
+</html>
